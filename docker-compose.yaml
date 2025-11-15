@@ -1,0 +1,29 @@
+services:
+  bilibili-danmu:
+    image: alpine:3.18
+    container_name: bilibili-danmu
+    working_dir: /app
+    environment:
+      LANG: "C.UTF-8"
+      TZ: "Asia/Shanghai"
+    volumes:
+      # 挂载的文件路径 ./config 可以修改到您需要的地方. 以存储爬取的缓存、日志、结果
+      - ./config:/app/config
+    ports:
+      # 端口映射. 默认是 28299 端口; 如果需要, 可自行修改
+      - "28299:28299"
+    command: >
+      sh -c "
+      apk add --no-cache git python3 py3-pip curl;
+      pip install --upgrade pip;
+      pip install uv==0.7.0;
+      if [ ! -d /app/BiLiBiLi_DanMu_Crawling ]; then
+        git clone https://github.com/HengXin666/BiLiBiLi_DanMu_Crawling.git /app/BiLiBiLi_DanMu_Crawling;
+      else
+        cd /app/BiLiBiLi_DanMu_Crawling && git pull;
+      fi;
+      cd /app/BiLiBiLi_DanMu_Crawling/py;
+      uv sync --frozen --no-cache;
+      uv run main.py -c /app/config
+      "
+    restart: unless-stopped
