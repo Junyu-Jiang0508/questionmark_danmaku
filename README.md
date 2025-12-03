@@ -1,104 +1,82 @@
 # questionmark_danmaku
 
-**What this repo does (in one sentence):**  
-End-to-end pipeline to **search Bilibili videos, crawl danmaku and subtitles, run Whisper transcription, and align “question-mark danmaku” (e.g. `????`) with the spoken content** for downstream discourse analysis.
+**Computational Pipeline for Analyzing "Question Mark Storms" in the Digital Public Sphere**
 
-This repository contains the core scripts I use to build a research corpus of **question-mark danmaku storms**—dense bursts of `?` bullet comments on Bilibili—by automatically:
-
-1. Finding relevant videos,
-2. Crawling their danmaku and subtitles,
-3. Transcribing audio with Whisper when subtitles are missing, and
-4. Matching danmaku timestamps to the nearest subtitle/transcript segments,
-5. Filtering out only the **“question-mark” style danmaku** for further analysis.
-
-> ⚠️ **Note**
+> **📄 Manuscript & Theoretical Framework**
 >
-> - This is a **code-only** repository: it contains the pipeline, **not** the full video/danmaku dataset.  
-> - Data collection from Bilibili is subject to **copyright, platform policies, and local laws**; please use responsibly.
+> The full theoretical background, research design, and empirical findings associated with this codebase are documented in the manuscript file:
+> **`00000_Manual_Scripts.pdf`**
+>
+> Please refer to this document for the complete academic context regarding "Infrapolitics," "Oppositional Decoding," and the "K-Visa" case study.
 
 ---
 
-## 1. Project overview
+## 1. Project Overview
 
-### Why question-mark danmaku?
+This repository contains the end-to-end computational pipeline used to construct the dataset for the study **"Question Mark Storms: Infrapolitics and Oppositional Decoding in China's Digital Public Sphere."**
 
-On Bilibili and similar platforms, strings of `?`, `？？？`, or mixed punctuation often function as:
+The project investigates **"question mark storms"** (dense bursts of `?` or `？？？` danmaku) on the Bilibili platform. Theoretically, these visual torrents are treated as digital micro-acts of **infrapolitics**—low-cost, high-context signals of skepticism that emerge when hegemonic state narratives clash with the lived reality of audiences.
 
-- reactions of confusion or disbelief,
-- subtle disagreement or mockery,
-- or low-risk “micro-resistance” in sensitive contexts.
+To empirically test this phenomenon, this pipeline automates the construction of a granular, time-aligned panel dataset by:
+1.  **Corpus Construction:** Retrieving video metadata and engagement metrics.
+2.  **Multimodal Data Extraction:** Crawling danmaku streams and retrieving official subtitles.
+3.  **Audio Transcription:** Utilizing **OpenAI Whisper** to generate high-fidelity transcripts for uncaptioned content.
+4.  **Temporal Alignment:** Synchronizing danmaku timestamps with spoken narrative segments to model the immediate reaction to specific discourse.
+5.  **Signal Filtering:** Isolating "question mark" tokens to operationalize the dependent variable (dissent intensity).
 
-Rather than reading individual comments in isolation, this project focuses on **high-density “question-mark storms”** and asks:
-
-- When do viewers collectively flood the screen with `?`?
-- What is happening in the **audio / subtitles** at those moments?
-- How do these storms relate to **political, social, or cultural content** in the videos?
-
-This repository provides the **technical backbone** for building such a dataset.
-
----
-
-## 2. Pipeline at a glance
-
-The core scripts are numbered in the order you typically run them:
-
-1. **`01_search.py`**  
-   Search Bilibili (by keyword, uploader, etc.) and collect a list of **video IDs / URLs** to be processed.
-
-2. **`02_danmakucrawling.py`**  
-   Given a list of video IDs, crawl their **danmaku (bullet comments)** and save them with timestamps and basic metadata.
-
-3. **`03_crawling_api.py`**  
-   Additional / alternative crawling through APIs (e.g., structured interfaces for danmaku or metadata), depending on how you prefer to pull data.
-
-4. **`04_get_subtitles.py`**  
-   Try to download **official subtitles / captions** for each video where available (e.g., Bilibili generated or uploader-provided subtitles).
-
-5. **`05_whisper_transcriber.py`**  
-   For videos without usable subtitles, call **OpenAI Whisper** (or a local Whisper setup via Docker) to:
-   - download the audio,
-   - transcribe it into text,
-   - and store it with time-aligned segments.
-
-6. **`06_regenerate_timestamps.py`**  
-   Clean and normalize timestamps from subtitles / transcripts so they can be reliably matched with danmaku times (e.g., fix offsets, ensure consistent time units).
-
-7. **`07_danmaku_subtitle_matching.py`**  
-   Core alignment step:
-   - take danmaku (with timestamps) and subtitle / transcript segments,
-   - match each danmaku to the **closest subtitle segment in time**,
-   - produce a combined table linking: `video_id`, `danmaku_text`, `danmaku_time`, `subtitle_text`, `subtitle_time`.
-
-8. **`08_filter_question_danmaku.py`**  
-   Filter the merged dataset to keep only **“question-mark danmaku”**, e.g.:
-   - pure `?` / `？？？`,
-   - mixed patterns where `?` is dominant.  
-   This produces the final **question-mark danmaku corpus** for later annotation or analysis.
-
-Supporting files:
-
-- **`manual_scripts.pdf`** – A manual walkthrough of the script sequence and expected inputs/outputs.  
-- **`check_gpu.py`** – Quick utility to check whether GPU / CUDA is available (useful before running Whisper).  
-- **`docker-compose.yaml`** – Optional Docker configuration (e.g. to spin up a local Whisper or environment).  
-- **`requirements.txt`** – Python dependencies used by the pipeline.  
-- **`torchvision-0.20.1+cu121-cp312-cp312-win_amd64.whl`** – Local wheel for installing the matching `torchvision` version in a Windows + CUDA 12.1 + Python 3.12 environment.
+> **⚠️ Note**
+> * This is a **code-only repository**. Due to copyright, platform terms of service, and privacy considerations, the raw video files and full danmaku datasets are not included.
+> * Researchers must ensure their data collection complies with Bilibili’s policies and relevant data protection laws.
 
 ---
 
-## 3. Repository structure
+## 2. Methodological Pipeline
+
+The scripts are numbered sequentially to reflect the data processing workflow, moving from raw data acquisition to the construction of an analysis-ready panel dataset.
+
+### Phase I: Data Acquisition
+* **`01_search.py`**
+    **Corpus Sampling.** Systematically searches Bilibili based on keywords (e.g., "K-Visa") or specific uploaders. It applies inclusion criteria (e.g., >5,000 views) to generate a target list of Video IDs (BVIDs).
+
+* **`02_danmakucrawling.py`**
+    **Danmaku Extraction.** Crawls the full XML danmaku streams for identified videos, preserving essential metadata: anonymized User ID, content payload, and video playback timestamp (down to the millisecond).
+
+* **`03_crawling_api.py`**
+    **API Interface.** An alternative retrieval module utilizing Bilibili's API for structured metadata or supplemental comment data when direct scraping is insufficient.
+
+### Phase II: Narrative Reconstruction
+* **`04_get_subtitles.py`**
+    **Subtitle Retrieval.** Attempts to fetch official closed captions (CC) provided by uploaders or the platform. This serves as the primary source for the "Narrative Context" variable.
+
+* **`05_whisper_transcriber.py`**
+    **ASR Transcription.** For videos lacking official captions, this script employs the **OpenAI Whisper** model (configurable for local Docker execution) to extract spoken audio and generate time-stamped text segments. This ensures zero data loss for user-generated content.
+
+### Phase III: Data Alignment & Operationalization
+* **`06_regenerate_timestamps.py`**
+    **Temporal Normalization.** Cleans and standardizes timestamps across disparate sources (official subtitles vs. Whisper outputs), ensuring a consistent time unit (seconds) for subsequent matching.
+
+* **`07_danmaku_subtitle_matching.py`**
+    **Segment-Level Alignment.** The core processing step. It merges the textual narrative (subtitles) and audience response (danmaku) into a unified dataframe. Each danmaku is matched to the nearest narrative segment, enabling the analysis of *what* was said immediately prior to a user's reaction.
+
+* **`08_filter_question_danmaku.py`**
+    **Variable Operationalization.** Filters the aligned dataset to isolate the dependent variable: **"Question Mark Danmaku."** It detects pure symbol strings (e.g., `?`, `?????`) and mixed-character strings where punctuation functions as the dominant semantic carrier, preparing the final corpus for regression analysis.
+
+---
+
+## 3. Repository Structure
 
 ```text
 questionmark_danmaku/
-├── 01_search.py                     # Search Bilibili and collect video IDs
-├── 02_danmakucrawling.py           # Crawl danmaku (bullet comments)
-├── 03_crawling_api.py              # Additional API-based crawling
-├── 04_get_subtitles.py             # Fetch official subtitles/captions
-├── 05_whisper_transcriber.py       # Transcribe audio with Whisper
-├── 06_regenerate_timestamps.py     # Clean/normalize timestamps
-├── 07_danmaku_subtitle_matching.py # Align danmaku with subtitles/transcripts
-├── 08_filter_question_danmaku.py   # Keep only “question-mark” danmaku
-├── check_gpu.py                    # Utility: check GPU/CUDA availability
-├── docker-compose.yaml             # Optional Docker config for environment/Whisper
-├── manual_scripts.pdf              # Human-readable pipeline manual
-├── requirements.txt                # Python dependencies
-└── torchvision-0.20.1+cu121-...whl # Local torchvision wheel (Windows + CUDA 12.1)
+├── 00000_Manual_Scripts.pdf            # MANUSCRIPT: Theory, method, and results
+├── 01_search.py                        # Corpus sampling and video ID retrieval
+├── 02_danmakucrawling.py               # Raw danmaku stream extraction
+├── 03_crawling_api.py                  # API-based metadata retrieval
+├── 04_get_subtitles.py                 # Official subtitle downloader
+├── 05_whisper_transcriber.py           # ASR transcription (OpenAI Whisper)
+├── 06_regenerate_timestamps.py         # Timestamp normalization
+├── 07_danmaku_subtitle_matching.py     # Alignment of narrative and response data
+├── 08_filter_question_danmaku.py       # Operationalization of the "Question Mark" variable
+├── check_gpu.py                        # Utility: CUDA/GPU availability check
+├── docker-compose.yaml                 # Docker config for reproducible ASR environment
+├── requirements.txt                    # Python dependencies
+└── torchvision-0.20.1...whl            # Local wheel for Windows/CUDA compatibility
